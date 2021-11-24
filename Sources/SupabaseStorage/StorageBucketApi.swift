@@ -19,7 +19,7 @@ public class StorageBucketApi: StorageApi {
             return
         }
 
-        fetch(url: url, method: .get, parameters: nil, headers: headers) { result in
+        fetch(url: url, method: .get, headers: headers) { result in
             switch result {
             case let .success(response):
                 guard let dict: [[String: Any]] = response as? [[String: Any]] else {
@@ -43,7 +43,7 @@ public class StorageBucketApi: StorageApi {
             return
         }
 
-        fetch(url: url, method: .get, parameters: nil, headers: headers) { result in
+        fetch(url: url, method: .get, headers: headers) { result in
             switch result {
             case let .success(response):
                 guard let dict: [String: Any] = response as? [String: Any], let bucket = Bucket(from: dict) else {
@@ -91,7 +91,7 @@ public class StorageBucketApi: StorageApi {
             return
         }
 
-        fetch(url: url, method: .post, parameters: [:], headers: headers) { result in
+        fetch(url: url, method: .post, headers: headers) { result in
             switch result {
             case let .success(response):
                 guard let dict: [String: Any] = response as? [String: Any] else {
@@ -116,7 +116,7 @@ public class StorageBucketApi: StorageApi {
             return
         }
 
-        fetch(url: url, method: .delete, parameters: [:], headers: headers) { result in
+        fetch(url: url, method: .delete, headers: headers) { result in
             switch result {
             case let .success(response):
                 guard let dict: [String: Any] = response as? [String: Any] else {

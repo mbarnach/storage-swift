@@ -140,11 +140,18 @@ public class StorageFileApi: StorageApi {
             return
         }
 
-        var sortBy: [String: String] = [:]
-        sortBy["column"] = options?.sortBy?.column ?? "name"
-        sortBy["order"] = options?.sortBy?.order ?? "asc"
-
-        fetch(url: url, method: .post, parameters: ["prefix": path ?? "", "limit": options?.limit ?? 100, "offset": options?.offset ?? 0], headers: headers) { result in
+        fetch(url: url,
+              method: .post,
+              parameters: ObjectListParameters(
+                  prefix: path ?? "",
+                  limit: options?.limit ?? 100,
+                  offset: options?.offset ?? 0,
+                  sortBy: SortBy(
+                      column: options?.sortBy?.column ?? "name",
+                      order: options?.sortBy?.order ?? "asc"
+                  )
+              ),
+              headers: headers) { result in
             switch result {
             case let .success(response):
                 guard let arr: [[String: Any]] = response as? [[String: Any]] else {
@@ -170,7 +177,7 @@ public class StorageFileApi: StorageApi {
             return nil
         }
 
-        let dataTask = fetch(url: url, parameters: nil) { result in
+        let dataTask = fetch(url: url) { result in
             switch result {
             case let .success(data):
                 guard let data: Data = data as? Data else {

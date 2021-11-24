@@ -4,6 +4,8 @@ public class StorageApi {
     var url: String
     var headers: [String: String]
 
+    public var jsonEncoder: JSONEncoder = JSONEncoder()
+
     init(url: String, headers: [String: String]) {
         self.url = url
         self.headers = headers
@@ -23,7 +25,7 @@ public class StorageApi {
     }
 
     @discardableResult
-    internal func fetch(url: URL, method: HTTPMethod = .get, parameters: [String: Any]?, headers: [String: String]? = nil, jsonSerialization _: Bool = true, completion: @escaping (Result<Any, Error>) -> Void) -> URLSessionDataTask? {
+    internal func fetch(url: URL, method: HTTPMethod = .get, headers: [String: String]? = nil, completion: @escaping (Result<Any, Error>) -> Void) -> URLSessionDataTask? {
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
 
@@ -34,13 +36,54 @@ public class StorageApi {
             request.allHTTPHeaderFields = self.headers
         }
 
-        if let parameters = parameters {
-            do {
-                request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: [])
-            } catch {
+        let session = URLSession.shared
+        let dataTask: URLSessionDataTask = session.dataTask(with: request, completionHandler: { (data, response, error) -> Void in
+            if let error = error {
                 completion(.failure(error))
-                return nil
+                return
             }
+
+            if let resp = response as? HTTPURLResponse {
+                if let data = data, let mimeType = response?.mimeType {
+                    do {
+                        switch mimeType {
+                        case "application/json":
+                            let json = try JSONSerialization.jsonObject(with: data, options: [])
+                            completion(.success(try self.parse(response: json, statusCode: resp.statusCode)))
+                        default:
+                            completion(.success(try self.parse(response: data, statusCode: resp.statusCode)))
+                        }
+                    } catch {
+                        completion(.failure(error))
+                        return
+                    }
+                }
+            } else {
+                completion(.failure(StorageError(message: "failed to get response")))
+            }
+
+        })
+
+        dataTask.resume()
+        return dataTask
+    }
+
+    @discardableResult
+    internal func fetch<Parameters: Codable>(url: URL, method: HTTPMethod = .get, parameters: Parameters, headers: [String: String]? = nil, completion: @escaping (Result<Any, Error>) -> Void) -> URLSessionDataTask? {
+        var request = URLRequest(url: url)
+        request.httpMethod = method.rawValue
+
+        if var headers = headers {
+            headers.merge(self.headers) { $1 }
+            request.allHTTPHeaderFields = headers
+        } else {
+            request.allHTTPHeaderFields = self.headers
+        }
+        do {
+            request.httpBody = try jsonEncoder.encode(parameters)
+        } catch {
+            completion(.failure(error))
+            return nil
         }
 
         let session = URLSession.shared
